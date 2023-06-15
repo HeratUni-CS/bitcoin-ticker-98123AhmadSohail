@@ -9,27 +9,28 @@ class PriceScreen extends StatefulWidget {
 }
 
 class _PriceScreenState extends State<PriceScreen> {
-  String selectedCurrency = 'USD';
+  //6: Update the default currency to AUD, the first item in the currencyList.
+  String selectedCurrency = 'AUD';
 
   DropdownButton<String> androidDropdown() {
-    List<DropdownMenuItem<String>> dropDownItems = [];
+    List<DropdownMenuItem<String>> dropdownItems = [];
     for (String currency in currenciesList) {
       var newItem = DropdownMenuItem(
         value: currency,
         child: Text(currency),
       );
-      dropDownItems.add(newItem);
+      dropdownItems.add(newItem);
     }
 
     return DropdownButton<String>(
       value: selectedCurrency,
-      items: dropDownItems,
+      items: dropdownItems,
       onChanged: (value) {
-        setState(
-          () {
-            selectedCurrency = value!;
-          },
-        );
+        setState(() {
+          selectedCurrency = value!;
+          //2: Call getData() when the picker/dropdown changes.
+          getData();
+        });
       },
     );
   }
@@ -42,12 +43,38 @@ class _PriceScreenState extends State<PriceScreen> {
 
     return CupertinoPicker(
       backgroundColor: Colors.lightBlue,
-      itemExtent: 32,
-      onSelectedItemChanged: (selectedItems) {
-        print(selectedItems);
+      itemExtent: 32.0,
+      onSelectedItemChanged: (selectedIndex) {
+        print(selectedIndex);
+        setState(() {
+          //1: Save the selected currency to the property selectedCurrency
+          selectedCurrency = currenciesList[selectedIndex];
+          //2: Call getData() when the picker/dropdown changes.
+          getData();
+        });
       },
       children: pickerItems,
     );
+  }
+
+  String bitcoinValue = '?';
+
+  void getData() async {
+    try {
+      //We're now passing the selectedCurrency when we call getCoinData().
+      var data = await CoinData().getCoinData(selectedCurrency);
+      setState(() {
+        bitcoinValue = data;
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getData();
   }
 
   @override
@@ -68,12 +95,13 @@ class _PriceScreenState extends State<PriceScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
                 child: Text(
-                  '1 BTC = ? USD',
+                  //5: Update the currency name depending on the selectedCurrency.
+                  '1 BTC = $bitcoinValue $selectedCurrency',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 20.0,
                     color: Colors.white,
                   ),
@@ -86,7 +114,7 @@ class _PriceScreenState extends State<PriceScreen> {
             alignment: Alignment.center,
             padding: const EdgeInsets.only(bottom: 30.0),
             color: Colors.lightBlue,
-            child: Platform.isAndroid ? androidDropdown() : iOSPicker(),
+            child: Platform.isIOS ? iOSPicker() : androidDropdown(),
           ),
         ],
       ),
